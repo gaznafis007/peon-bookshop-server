@@ -60,12 +60,17 @@ async function run() {
       const pageNumber = parseInt(page);
       const query = {};
       const count = await booksCollection.estimatedDocumentCount();
-      const books = await booksCollection
-        .find(query)
-        .skip(12 * pageNumber)
-        .limit(12)
-        .toArray();
-      res.send({ count, books });
+      const totalPage = Math.ceil(count / 12);
+      if (page >= totalPage) {
+        res.send({ message: "no more books" });
+      } else {
+        const books = await booksCollection
+          .find(query)
+          .skip(12 * pageNumber)
+          .limit(12)
+          .toArray();
+        res.send({ count, books });
+      }
     });
     app.get("/miniBooks", async (req, res) => {
       const query = {};
