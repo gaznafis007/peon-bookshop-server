@@ -28,14 +28,14 @@ app.get("/", (req, res) => {
   res.send("Peon server is running");
 });
 
-app.get("/books", (req, res) => {
-  console.log(data);
-  res.send(data);
-});
+// app.get("/books", (req, res) => {
+//   console.log(data);
+//   res.send(data);
+// });
 
-app.get("/miniBooks", (req, res) => {
-  res.send(miniBooks);
-});
+// app.get("/miniBooks", (req, res) => {
+//   res.send(miniBooks);
+// });
 
 app.get("/customerReview", (req, res) => {
   res.send(reviews);
@@ -48,10 +48,28 @@ app.get("/customerReview", (req, res) => {
 async function run() {
   try {
     const teamCollection = client.db("peonDB").collection("team");
+    const booksCollection = client.db("peonDB").collection("books");
 
     app.get("/ourTeam", async (req, res) => {
       const query = {};
       const result = await teamCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/books", async (req, res) => {
+      const page = req.query.page;
+      const pageNumber = parseInt(page);
+      const query = {};
+      const count = await booksCollection.estimatedDocumentCount();
+      const books = await booksCollection
+        .find(query)
+        .skip(12 * pageNumber)
+        .limit(12)
+        .toArray();
+      res.send({ count, books });
+    });
+    app.get("/miniBooks", async (req, res) => {
+      const query = {};
+      const result = await booksCollection.find(query).limit(6).toArray();
       res.send(result);
     });
   } finally {
