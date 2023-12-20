@@ -49,6 +49,7 @@ async function run() {
   try {
     const teamCollection = client.db("peonDB").collection("team");
     const booksCollection = client.db("peonDB").collection("books");
+    const userCollection = client.db("peonDB").collection("users");
 
     app.get("/ourTeam", async (req, res) => {
       const query = {};
@@ -75,6 +76,11 @@ async function run() {
     app.get("/miniBooks", async (req, res) => {
       const query = {};
       const result = await booksCollection.find(query).limit(6).toArray();
+      res.send(result);
+    });
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
       res.send(result);
     });
   } finally {
