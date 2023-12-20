@@ -3,16 +3,33 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
+const jwt = require("jsonwebtoken");
+
+// JWT_Token
 
 require("dotenv").config();
 
 app.use(express.json());
 app.use(cors());
 
-const data = require("./data/books.json");
-const miniBooks = require("./data/miniBooks.json");
+// const data = require("./data/books.json");
+// const miniBooks = require("./data/miniBooks.json");
 const reviews = require("./data/reviews.json");
-const team = require("./data/team.json");
+// const team = require("./data/team.json");
+
+// MIDDLEWARE
+function verifyJWT(req, res, next) {
+  const authHeader = req.header.authentication;
+  const auth = authHeader.split(" ");
+  jwt.verify(auth, process.env.TOKEN, (error, decoded) => {
+    if (error) {
+      console.log(error);
+      res.send(error.message);
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.sahqxic.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -78,8 +95,31 @@ async function run() {
       const result = await booksCollection.find(query).limit(6).toArray();
       res.send(result);
     });
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      console.log(email);
+      const query = { email: email };
+      const user = await userCollection.find(query).toArray();
+      console.log(user);
+      if (user.length > 0) {
+        console.log(user.length);
+        const token = jwt.sign(email, process.env.TOKEN);
+        res.send({ token });
+      } else {
+        res.status(401).send({ message: "unauthorized access" });
+      }
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
+      const email = req.query.email;
+      const query = { email: email };
+      const preUser = await userCollection.find(query).toArray();
+      console.log(preUser.length);
+      if (preUser.length > 0) {
+        return res
+          .status(402)
+          .send({ acknowledged: false, message: "Email already in use" });
+      }
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
