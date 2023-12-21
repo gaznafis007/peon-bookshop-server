@@ -72,6 +72,7 @@ async function run() {
     const userCollection = client.db("peonDB").collection("users");
     const blogCollection = client.db("peonDB").collection("blogs");
     const bookReviewCollection = client.db("peonDB").collection("bookReview");
+    const wishlistCollection = client.db("peonDB").collection("wishlist");
 
     app.get("/ourTeam", async (req, res) => {
       const query = {};
@@ -95,6 +96,12 @@ async function run() {
         res.send({ count, books });
       }
     });
+    app.get("/books/:id", async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await booksCollection.findOne(query);
+      res.send(result);
+    });
     app.get("/miniBooks", async (req, res) => {
       const query = {};
       const result = await booksCollection.find(query).limit(6).toArray();
@@ -113,6 +120,37 @@ async function run() {
       } else {
         res.status(401).send({ message: "unauthorized access" });
       }
+    });
+    app.get("/wishlist", async (req, res) => {
+      const email = req.query.email;
+      const query = { userEmail: email };
+      const result = await wishlistCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.post("/wishlist", verifyJWT, async (req, res) => {
+      const id = new ObjectId(req.query.id);
+      const email = req.query.email;
+      const query = { _id: id };
+      const targetedUserMail = { email: email };
+      const wishedBook = await booksCollection.findOne(query);
+      const targetedUser = await userCollection.findOne(targetedUserMail);
+      const bookForWishlist = {
+        userEmail: targetedUser.email,
+        userName: targetedUser.name,
+        wishlistBookTitle: wishedBook.book_title,
+        wishlistBookPrice: wishedBook.book_price,
+        wishlistBookAuthor: wishedBook.book_author,
+        wishlistBookId: wishedBook._id,
+        wishlistBookImageUrl: wishedBook.book_image_url,
+      };
+      const result = await wishlistCollection.insertOne(bookForWishlist);
+      res.send(result);
+    });
+    app.delete("/wishlist/:id", verifyJWT, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await wishlistCollection.deleteOne(query);
+      res.send(result);
     });
     app.post("/users", async (req, res) => {
       const user = req.body;
