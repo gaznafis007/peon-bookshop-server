@@ -19,12 +19,16 @@ const reviews = require("./data/reviews.json");
 
 // MIDDLEWARE
 function verifyJWT(req, res, next) {
-  const authHeader = req.header.authentication;
-  const auth = authHeader.split(" ");
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const auth = authHeader.split(" ")[1];
+  console.log(authHeader, auth);
   jwt.verify(auth, process.env.TOKEN, (error, decoded) => {
     if (error) {
       console.log(error);
-      res.send(error.message);
+      res.status(401).send({ message: "unauthorized" });
     }
     req.decoded = decoded;
     next();
@@ -67,6 +71,7 @@ async function run() {
     const teamCollection = client.db("peonDB").collection("team");
     const booksCollection = client.db("peonDB").collection("books");
     const userCollection = client.db("peonDB").collection("users");
+    const blogCollection = client.db("peonDB").collection("blogs");
 
     app.get("/ourTeam", async (req, res) => {
       const query = {};
@@ -121,6 +126,16 @@ async function run() {
           .send({ acknowledged: false, message: "Email already in use" });
       }
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+    app.get("/blog", async (req, res) => {
+      const query = {};
+      const result = await blogCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.post("/blog", verifyJWT, async (req, res) => {
+      const blog = req.body;
+      const result = await blogCollection.insertOne(blog);
       res.send(result);
     });
   } finally {
