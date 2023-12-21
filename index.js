@@ -82,8 +82,18 @@ async function run() {
     app.get("/books", async (req, res) => {
       const page = req.query.page;
       const pageNumber = parseInt(page);
-      const query = {};
-      const count = await booksCollection.estimatedDocumentCount();
+      let query = {};
+      if (req.query.author) {
+        const authorSearch = req.query.author;
+        const authorSearchQuery = new RegExp(authorSearch, "i");
+        query = { book_author: { $regex: authorSearchQuery } };
+      }
+      if (req.query.title) {
+        const searchTerm = req.query.title;
+        const searchRegex = new RegExp(searchTerm, "i");
+        query = { book_title: { $regex: searchRegex } };
+      }
+      const count = (await booksCollection.find(query).toArray()).length;
       const totalPage = Math.ceil(count / 12);
       if (page >= totalPage) {
         res.send({ message: "no more books" });
@@ -106,6 +116,17 @@ async function run() {
       const query = {};
       const result = await booksCollection.find(query).limit(6).toArray();
       res.send(result);
+    });
+    app.get("/authors", async (req, res) => {
+      const query = {};
+      const authors = await booksCollection
+        .find(query)
+        .project({ book_author: 1 })
+        .toArray();
+      const uniqueAuthors = [
+        ...new Set(authors.map((author) => author.book_author)),
+      ];
+      res.send(uniqueAuthors);
     });
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
