@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 const app = express();
 const jwt = require("jsonwebtoken");
@@ -131,6 +131,12 @@ async function run() {
     app.get("/blog", async (req, res) => {
       const query = {};
       const result = await blogCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/blog/:id", async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await blogCollection.findOne(query);
       res.send(result);
     });
     app.post("/blog", verifyJWT, async (req, res) => {
