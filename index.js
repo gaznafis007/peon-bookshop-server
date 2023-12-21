@@ -24,7 +24,6 @@ function verifyJWT(req, res, next) {
     return res.status(403).send({ message: "forbidden access" });
   }
   const auth = authHeader.split(" ")[1];
-  console.log(authHeader, auth);
   jwt.verify(auth, process.env.TOKEN, (error, decoded) => {
     if (error) {
       console.log(error);
