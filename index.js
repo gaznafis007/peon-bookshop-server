@@ -71,6 +71,7 @@ async function run() {
     const booksCollection = client.db("peonDB").collection("books");
     const userCollection = client.db("peonDB").collection("users");
     const blogCollection = client.db("peonDB").collection("blogs");
+    const bookReviewCollection = client.db("peonDB").collection("bookReview");
 
     app.get("/ourTeam", async (req, res) => {
       const query = {};
@@ -141,6 +142,22 @@ async function run() {
     app.post("/blog", verifyJWT, async (req, res) => {
       const blog = req.body;
       const result = await blogCollection.insertOne(blog);
+      res.send(result);
+    });
+    app.get("/bookReview", verifyJWT, async (req, res) => {
+      const query = {};
+      const result = await bookReviewCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/bookReview/:id", async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await bookReviewCollection.findOne(query);
+      res.send(result);
+    });
+    app.post("/bookReview", verifyJWT, async (req, res) => {
+      const bookReview = req.body;
+      const result = await bookReviewCollection.insertOne(bookReview);
       res.send(result);
     });
   } finally {
