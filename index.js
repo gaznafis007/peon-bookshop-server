@@ -95,7 +95,7 @@ async function run() {
       let query = {};
       if (req.query.author) {
         const authorSearch = req.query.author;
-        const authorSearchQuery = new RegExp(authorSearch, "i");
+        const authorSearchQuery = new RegExp(authorSearch, "i"); //for case insensitive
         query = { book_author: { $regex: authorSearchQuery } };
       }
       if (req.query.title) {
@@ -228,7 +228,19 @@ async function run() {
       res.send({ isAdmin: user?.role === "admin" });
     });
     app.get("/blog", async (req, res) => {
-      const query = {};
+      let query = {};
+      const result = await blogCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/v2/blog", verifyJWT, async (req, res) => {
+      let query = {};
+      if (req.query.email) {
+        if ((req.decoded = req.query.email)) {
+          query = { email: req.query.email };
+        } else {
+          return res.status(401).send({ message: "Forbidden access" });
+        }
+      }
       const result = await blogCollection.find(query).toArray();
       res.send(result);
     });
@@ -243,8 +255,20 @@ async function run() {
       const result = await blogCollection.insertOne(blog);
       res.send(result);
     });
+    app.delete("/blog/:id", verifyJWT, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await blogCollection.deleteOne(query);
+      console.log(result);
+      res.send(result);
+    });
     app.get("/bookReview", verifyJWT, async (req, res) => {
-      const query = {};
+      let query = {};
+      if (req.query.email && req.query.email === req.decoded) {
+        query = { userEmail: req.query.email };
+      } else {
+        return res.status(403).send({ message: "unauthorized" });
+      }
       const result = await bookReviewCollection.find(query).toArray();
       res.send(result);
     });
@@ -257,6 +281,12 @@ async function run() {
     app.post("/bookReview", verifyJWT, async (req, res) => {
       const bookReview = req.body;
       const result = await bookReviewCollection.insertOne(bookReview);
+      res.send(result);
+    });
+    app.delete("/bookReview/:id", async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await bookReviewCollection.deleteOne(query);
       res.send(result);
     });
   } finally {
