@@ -74,6 +74,16 @@ async function run() {
     const bookReviewCollection = client.db("peonDB").collection("bookReview");
     const wishlistCollection = client.db("peonDB").collection("wishlist");
 
+    async function verifyAdmin(req, res, next) {
+      const email = req.decoded;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      if (user?.role === "admin") {
+        next();
+      } else {
+        return res.send({ message: "forbidden access" });
+      }
+    }
     app.get("/ourTeam", async (req, res) => {
       const query = {};
       const result = await teamCollection.find(query).toArray();
@@ -130,10 +140,8 @@ async function run() {
     });
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
-      console.log(email);
       const query = { email: email };
       const user = await userCollection.find(query).toArray();
-      console.log(user);
       if (user.length > 0) {
         console.log(user.length);
         const token = jwt.sign(email, process.env.TOKEN);
@@ -173,12 +181,16 @@ async function run() {
       const result = await wishlistCollection.deleteOne(query);
       res.send(result);
     });
+    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = {};
+      const result = await userCollection.find(query).toArray();
+      res.send(result);
+    });
     app.post("/users", async (req, res) => {
       const user = req.body;
       const email = req.query.email;
       const query = { email: email };
       const preUser = await userCollection.find(query).toArray();
-      console.log(preUser.length);
       if (preUser.length > 0) {
         return res
           .status(402)
@@ -186,6 +198,34 @@ async function run() {
       }
       const result = await userCollection.insertOne(user);
       res.send(result);
+    });
+    app.put("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const options = { upsert: true };
+      const updatedDocument = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await userCollection.updateOne(
+        query,
+        updatedDocument,
+        options
+      );
+      res.send(result);
+    });
+    app.delete("/users/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.get("/admin", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      res.send({ isAdmin: user?.role === "admin" });
     });
     app.get("/blog", async (req, res) => {
       const query = {};
