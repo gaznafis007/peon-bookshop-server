@@ -116,6 +116,37 @@ async function run() {
         res.send({ count, books });
       }
     });
+    app.get("/allBooks", async (req, res) => {
+      let query = {};
+      let page;
+      let pageNumber;
+      let toTalPage;
+      if (req.query.title) {
+        const searchedText = req.query.title;
+        const title = new RegExp(searchedText, "i");
+        query = { book_title: { $regex: title } };
+      }
+      if (req.query.author) {
+        const searchedAuthor = req.query.author;
+        const author = new RegExp(searchedAuthor, "i");
+        query = { book_author: { $regex: author } };
+      }
+      const count = (await booksCollection.find(query).toArray()).length;
+      if (req.query.page) {
+        page = req.query.page;
+        pageNumber = parseInt(page);
+        toTalPage = Math.ceil(count / 12);
+      }
+      if (page >= toTalPage) {
+        return res.send({ message: "no more books" });
+      }
+      const books = await booksCollection
+        .find(query)
+        .skip(12 * pageNumber)
+        .limit(12)
+        .toArray();
+      res.send({ count, books });
+    });
     app.get("/books/:id", async (req, res) => {
       const id = new ObjectId(req.params.id);
       const query = { _id: id };
@@ -264,12 +295,14 @@ async function run() {
     });
     app.get("/bookReview", verifyJWT, async (req, res) => {
       let query = {};
-      if (req.query.email && req.query.email === req.decoded) {
+      if (req.query.email) {
         query = { userEmail: req.query.email };
-      } else {
-        return res.status(403).send({ message: "unauthorized" });
+        if (req.query.email !== req.decoded) {
+          return res.status(403).send({ message: "unauthorized access" });
+        }
       }
       const result = await bookReviewCollection.find(query).toArray();
+      console.log(result);
       res.send(result);
     });
     app.get("/bookReview/:id", async (req, res) => {
