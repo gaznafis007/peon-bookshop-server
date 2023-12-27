@@ -116,6 +116,35 @@ async function run() {
         res.send({ count, books });
       }
     });
+    app.get("/books/:id", async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await booksCollection.findOne(query);
+      res.send(result);
+    });
+    app.post("/books", verifyJWT, verifyAdmin, async (req, res) => {
+      const bookInfo = req.body;
+      const result = await booksCollection.insertOne(bookInfo);
+      res.send(result);
+    });
+    app.delete("/books/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await booksCollection.deleteOne(query);
+      res.send(result);
+    });
+    // app.put("/books/:id", verifyJWT, async (req, res) => {
+    //   const id = new ObjectId(req.params.id);
+    //   const filter = { _id: id };
+    //   const updatedDocument = req.body;
+    //   const options = { upsert: true };
+    //   const result = await booksCollection.updateOne(
+    //     filter,
+    //     updatedDocument,
+    //     options
+    //   );
+    //   res.send(result);
+    // });
     app.get("/allBooks", async (req, res) => {
       let query = {};
       let page;
@@ -146,12 +175,6 @@ async function run() {
         .limit(12)
         .toArray();
       res.send({ count, books });
-    });
-    app.get("/books/:id", async (req, res) => {
-      const id = new ObjectId(req.params.id);
-      const query = { _id: id };
-      const result = await booksCollection.findOne(query);
-      res.send(result);
     });
     app.get("/miniBooks", async (req, res) => {
       const query = {};
