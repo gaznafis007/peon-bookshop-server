@@ -73,6 +73,7 @@ async function run() {
     const blogCollection = client.db("peonDB").collection("blogs");
     const bookReviewCollection = client.db("peonDB").collection("bookReview");
     const wishlistCollection = client.db("peonDB").collection("wishlist");
+    const orderCollection = client.db("peonDB").collection("orders");
 
     async function verifyAdmin(req, res, next) {
       const email = req.decoded;
@@ -341,6 +342,11 @@ async function run() {
       const id = new ObjectId(req.params.id);
       const query = { _id: id };
       const result = await bookReviewCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.post("/orders", async (req, res) => {
+      const order = req.body;
+      const result = await orderCollection.insertOne(order);
       res.send(result);
     });
   } finally {
