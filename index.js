@@ -82,6 +82,7 @@ async function run() {
       if (user?.role === "admin") {
         next();
       } else {
+        console.log("error");
         return res.send({ message: "forbidden access" });
       }
     }
@@ -344,10 +345,26 @@ async function run() {
       const result = await bookReviewCollection.deleteOne(query);
       res.send(result);
     });
-    app.post("/orders", async (req, res) => {
+    app.put("/orders", verifyJWT, async (req, res) => {
       const order = req.body;
+      console.log(order);
+      const bookQuery = { _id: new ObjectId(order.bookId) };
+      const orderedBook = await booksCollection.findOne(bookQuery);
+      let newOrderQty = orderedBook.qty - order.orderQty;
+      orderedBook.qty = newOrderQty;
+      const updatedDocument = {
+        $set: {
+          qty: newOrderQty,
+        },
+      };
+      const options = { upsert: true };
+      const updatedBookResult = await booksCollection.updateOne(
+        bookQuery,
+        updatedDocument,
+        options
+      );
       const result = await orderCollection.insertOne(order);
-      res.send(result);
+      res.send({ result, updatedBookResult });
     });
   } finally {
   }
