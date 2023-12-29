@@ -345,6 +345,16 @@ async function run() {
       const result = await bookReviewCollection.deleteOne(query);
       res.send(result);
     });
+    app.get("/orders", async (req, res) => {
+      const email = req.query.email;
+      const query = { userEmail: email };
+      const result = await orderCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/allOrders", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await orderCollection.find({}).toArray();
+      res.send(result);
+    });
     app.put("/orders", verifyJWT, async (req, res) => {
       const order = req.body;
       console.log(order);
@@ -365,6 +375,24 @@ async function run() {
       );
       const result = await orderCollection.insertOne(order);
       res.send({ result, updatedBookResult });
+    });
+    app.put("/orders/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const options = { upsert: true };
+      const updatedDocument = { $set: { status: "delivered" } };
+      const result = await orderCollection.updateOne(
+        query,
+        updatedDocument,
+        options
+      );
+      res.send(result);
+    });
+    app.delete("/orders/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = new ObjectId(req.params.id);
+      const query = { _id: id };
+      const result = await orderCollection.deleteOne(query);
+      res.send(result);
     });
   } finally {
   }
